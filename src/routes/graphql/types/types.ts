@@ -1,38 +1,6 @@
-import { GraphQLBoolean, GraphQLEnumType, GraphQLFloat, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
+import { GraphQLBoolean, GraphQLEnumType, GraphQLFloat, GraphQLInputObjectType, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLScalarType, GraphQLString } from "graphql";
 import { MemberTypeId } from "../../member-types/schemas.js";
 import { UUIDType } from "./uuid.js";
-
-export interface IMemberType {
-  id: string,
-  discount: number,
-  postsLimitPerMonth: number,
-}
-
-export interface IPost {
-  id: string,
-  title: string,
-  content: string,
-  authorId: string,
-}
-
-export interface IProfile {
-  id: string,
-  isMale: boolean,
-  yearOfBirth: number,
-  userId: string,
-  memberTypeId: string,
-  memberType: IMemberType,
-}
-
-export interface IUser {
-  id: string,
-  name: string,
-  balance: number,
-  profile: IProfile | null,
-  posts: IPost[],
-  userSubscribedTo: (IUser | null)[],
-  subscribedToUser: (IUser | null)[],
-}
 
 export const MemberTypeIdType = new GraphQLEnumType({ 
   name: 'MemberTypeId', 
@@ -61,6 +29,23 @@ export const PostType = new GraphQLObjectType({
   },
 });
 
+export const CreatePostInputType = new GraphQLInputObjectType({
+  name: 'CreatePostInput',
+  fields: {
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    authorId: { type: UUIDType },
+  },
+});
+
+export const ChangePostInputType = new GraphQLInputObjectType({
+  name: 'ChangePostInput',
+  fields: {
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+  },
+});
+
 export const ProfileType = new GraphQLObjectType({
   name: 'Profile',
   fields: {
@@ -70,6 +55,25 @@ export const ProfileType = new GraphQLObjectType({
     userId: { type: UUIDType },
     memberTypeId: { type: MemberTypeIdType },
     memberType: { type: MemberType },
+  },
+});
+
+export const CreateProfileInputType = new GraphQLInputObjectType({
+  name: 'CreateProfileInput',
+  fields: {
+    isMale: { type: GraphQLBoolean },
+    yearOfBirth: { type: GraphQLInt },
+    userId: { type: UUIDType },
+    memberTypeId: { type: MemberTypeIdType },
+  },
+});
+
+export const ChangeProfileInputType = new GraphQLInputObjectType({
+  name: 'ChangeProfileInput',
+  fields: {
+    isMale: { type: GraphQLBoolean },
+    yearOfBirth: { type: GraphQLInt },
+    memberTypeId: { type: MemberTypeIdType },
   },
 });
 
@@ -84,4 +88,20 @@ export const UserType = new GraphQLObjectType({
     userSubscribedTo: { type: new GraphQLList(UserType) },
     subscribedToUser: { type: new GraphQLList(UserType) },
   }),
+});
+
+export const CreateUserInputType = new GraphQLInputObjectType({
+  name: 'CreateUserInput',
+  fields: {
+    name: { type: GraphQLString },
+    balance: { type: GraphQLFloat },
+  },
+});
+
+export const ChangeUserInputType = new GraphQLInputObjectType({
+  name: 'ChangeUserInput',
+  fields: {
+    name: { type: GraphQLString },
+    balance: { type: GraphQLFloat },
+  },
 });

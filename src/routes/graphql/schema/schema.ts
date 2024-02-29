@@ -3,6 +3,7 @@ import { user, users, deleteUser, createUser, changeUser } from './users.js'
 import { post, posts, deletePost, createPost, changePost } from './posts.js'
 import { profile, profiles, deleteProfile, createProfile, changeProfile } from './profiles.js'
 import { memberType, memberTypes } from "./member-types.js";
+import { subscribeTo, unsubscribeFrom } from "./subscribes.js";
 
 export const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -18,7 +19,7 @@ export const schema = new GraphQLSchema({
       profiles,
 
       memberType,
-      memberTypes
+      memberTypes,
     },
   }),
 
@@ -36,6 +37,9 @@ export const schema = new GraphQLSchema({
       createProfile,
       changeProfile,
       deleteProfile,
+
+      subscribeTo,
+      unsubscribeFrom
     },
   }),
 });

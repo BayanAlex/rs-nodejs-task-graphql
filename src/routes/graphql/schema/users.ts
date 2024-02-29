@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { GraphQLFloat, GraphQLList, GraphQLString } from "graphql";
-import { IUser, UserType } from "../types/types.js";
+import { GraphQLList, GraphQLString } from "graphql";
+import { ChangeUserInputType, CreateUserInputType, UserType } from "../types/types.js";
 import { PrismaClient } from "@prisma/client";
 import { UUIDType } from "../types/uuid.js";
+import { ChangeUserInput, CreateUserInput, IUser } from "../models/models.js";
 
-async function getUser(id: string, context: PrismaClient, currentDepth?: number) {
+export async function getUser(id: string, context: PrismaClient, currentDepth?: number) {
   if (currentDepth === 5) {
     return null;
   }
@@ -54,7 +55,7 @@ export const user = {
   args: {
     id: { type: UUIDType },
   },
-  resolve: async (root, args: { id: string }, context: PrismaClient) => {
+  resolve: async (_root, args: { id: string }, context: PrismaClient) => {
     const { id } = args;
     return getUser(id, context);
   },
@@ -62,7 +63,7 @@ export const user = {
 
 export const users = {
   type: new GraphQLList(UserType),
-  resolve: async (root, args, context: PrismaClient) => {
+  resolve: async (_root, _args, context: PrismaClient) => {
     const users = await context.user.findMany();
     if (!users) {
       return null;
@@ -73,24 +74,24 @@ export const users = {
 }
 
 export const deleteUser = {
-  type: UserType,
+  type: GraphQLString,
   args: {
     id: { type: UUIDType },
   },
-  resolve: (root, args: { id: string }, context: PrismaClient) => {
+  resolve: async (_root, args: { id: string }, context: PrismaClient) => {
     const { id } = args;
-    return context.user.delete({ where: { id } });
+    await context.user.delete({ where: { id } });
+    return '';
   },
 }
 
 export const createUser = {
   type: UserType,
-  args: {
-    name: { type: GraphQLString },
-    balance: { type: GraphQLFloat },
+  args: { 
+    dto: { type: CreateUserInputType } 
   },
-  resolve: async (root, args: { name: string, balance: number }, context: PrismaClient) => {
-    return context.user.create({ data: args });
+  resolve: (_root, args: { dto: CreateUserInput }, context: PrismaClient) => {
+    return context.user.create({ data: args.dto });
   },
 }
 
@@ -98,14 +99,12 @@ export const changeUser = {
   type: UserType,
   args: {
     id: { type: UUIDType },
-    name: { type: GraphQLString },
-    balance: { type: GraphQLFloat },
+    dto: { type: ChangeUserInputType } 
   },
-  resolve: async (root, args: { id: string, name: string, balance: number }, context: PrismaClient) => {
-    const { id, name, balance } = args;
+  resolve: async (_root, args: { id: string, dto: ChangeUserInput }, context: PrismaClient) => {
     return context.user.update({
-      where: { id }, 
-      data: { name, balance }
+      where: { id: args.id }, 
+      data: { ...args.dto }
     });
   },
 }
