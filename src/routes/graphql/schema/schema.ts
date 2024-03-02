@@ -11,13 +11,10 @@ export const schema = new GraphQLSchema({
     fields: {
       user,
       users,
-
       post,
       posts,
-
       profile,
       profiles,
-
       memberType,
       memberTypes,
     },
@@ -29,15 +26,12 @@ export const schema = new GraphQLSchema({
       createUser,
       changeUser,
       deleteUser,
-
       createPost,
       changePost,
       deletePost,
-
       createProfile,
       changeProfile,
       deleteProfile,
-
       subscribeTo,
       unsubscribeFrom
     },

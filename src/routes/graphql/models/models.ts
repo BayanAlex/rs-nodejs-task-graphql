@@ -17,17 +17,23 @@ export interface IProfile {
   yearOfBirth: number,
   userId: string,
   memberTypeId: string,
-  memberType: IMemberType,
+  memberType?: IMemberType,
 }
 
 export interface IUser {
   id: string,
   name: string,
   balance: number,
-  profile: IProfile | null,
-  posts: IPost[],
-  userSubscribedTo: (IUser | null)[],
-  subscribedToUser: (IUser | null)[],
+  profile?: IProfile | null,
+  posts?: IPost[],
+  userSubscribedTo?: {
+    subscriberId: string,
+    authorId: string,
+  }[];
+  subscribedToUser?: {
+    subscriberId: string,
+    authorId: string,
+  }[];
 }
 
 export type CreatePostInput = Omit<IPost, 'id'>;

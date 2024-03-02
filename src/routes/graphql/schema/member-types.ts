@@ -4,8 +4,8 @@ import { PrismaClient } from "@prisma/client";
 
 export const memberTypes = {
     type: new GraphQLList(MemberType),
-    resolve: (root, args, context: PrismaClient) => {
-      return context.memberType.findMany();
+    resolve: (_root, _args, context: { prisma: PrismaClient }) => {
+      return context.prisma.memberType.findMany();
     },
 }
 
@@ -14,8 +14,7 @@ export const memberType = {
     args: {
         id: { type: MemberTypeIdType },
     },
-    resolve: (root, args: { id: string }, context: PrismaClient) => {
-        const { id } = args;
-        return context.memberType.findUnique({ where: { id } });
+    resolve: (_root, args: { id: string }, context: { prisma: PrismaClient }) => {
+        return context.prisma.memberType.findFirst({ where: { id: args.id } });
     },
 }

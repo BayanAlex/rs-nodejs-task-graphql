@@ -1,75 +1,37 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { GraphQLList, GraphQLString } from "graphql";
+import { GraphQLList, GraphQLResolveInfo, GraphQLString } from "graphql";
 import { ChangeUserInputType, CreateUserInputType, UserType } from "../types/types.js";
 import { PrismaClient } from "@prisma/client";
 import { UUIDType } from "../types/uuid.js";
-import { ChangeUserInput, CreateUserInput, IUser } from "../models/models.js";
-
-export async function getUser(id: string, context: PrismaClient, currentDepth?: number) {
-  if (currentDepth === 5) {
-    return null;
-  }
-
-  const user = await context.user.findUnique({ 
-    where: { id }, 
-    include: { 
-      posts: true, 
-      profile: {
-        include: {
-          memberType: true,
-          user: true,
-        }
-      },
-      subscribedToUser: {
-        select: {
-          subscriberId: true,
-        },
-      },
-      userSubscribedTo: {
-        select: {
-          authorId: true
-        },
-      }
-    }
-  });
-
-  if (!user) {
-    return null;
-  }
-
-  const depth = (currentDepth ?? 0) + 1;
-  const subscribedToUser = (await Promise.all(user.subscribedToUser.map((user) => getUser(user.subscriberId, context, depth)))).filter(Boolean);
-  const userSubscribedTo = (await Promise.all(user.userSubscribedTo.map((user) => getUser(user.authorId, context, depth)))).filter(Boolean);
-
-  const result: IUser = {
-    ...user,
-    subscribedToUser,
-    userSubscribedTo
-  };
-
-  return result;
-}
+import { ChangeUserInput, CreateUserInput } from "../models/models.js";
+import { Loaders } from "../loaders/loaders.js";
+import { ResolveTree, parseResolveInfo, simplifyParsedResolveInfoFragmentWithType } from "graphql-parse-resolve-info";
 
 export const user = {
   type: UserType,
   args: {
     id: { type: UUIDType },
   },
-  resolve: async (_root, args: { id: string }, context: PrismaClient) => {
-    const { id } = args;
-    return getUser(id, context);
+  resolve: async (_root, args: { id: string }, context: { prisma: PrismaClient }) => {
+    return context.prisma.user.findFirst({ where: { id: args.id } });
   },
 }
 
 export const users = {
   type: new GraphQLList(UserType),
-  resolve: async (_root, _args, context: PrismaClient) => {
-    const users = await context.user.findMany();
-    if (!users) {
-      return null;
-    }
-
-    return users.map((user) => getUser(user.id, context));
+  resolve: async (_root, _args, context: { prisma: PrismaClient, loaders: Loaders }, info: GraphQLResolveInfo) => {
+    const { fields } = simplifyParsedResolveInfoFragmentWithType(
+      parseResolveInfo(info) as ResolveTree,
+      info.returnType
+    );
+    const users = await context.prisma.user.findMany({
+      include: {
+        subscribedToUser: 'subscribedToUser' in fields,
+        userSubscribedTo: 'userSubscribedTo' in fields,
+      }
+    });
+    users.forEach((user) => context.loaders.users.prime(user.id, user));
+    return users;
   },
 }
 
@@ -78,9 +40,9 @@ export const deleteUser = {
   args: {
     id: { type: UUIDType },
   },
-  resolve: async (_root, args: { id: string }, context: PrismaClient) => {
+  resolve: async (_root, args: { id: string }, context: { prisma: PrismaClient }) => {
     const { id } = args;
-    await context.user.delete({ where: { id } });
+    await context.prisma.user.delete({ where: { id } });
     return '';
   },
 }
@@ -90,8 +52,8 @@ export const createUser = {
   args: { 
     dto: { type: CreateUserInputType } 
   },
-  resolve: (_root, args: { dto: CreateUserInput }, context: PrismaClient) => {
-    return context.user.create({ data: args.dto });
+  resolve: (_root, args: { dto: CreateUserInput }, context: { prisma: PrismaClient }) => {
+    return context.prisma.user.create({ data: args.dto });
   },
 }
 
@@ -101,8 +63,8 @@ export const changeUser = {
     id: { type: UUIDType },
     dto: { type: ChangeUserInputType } 
   },
-  resolve: async (_root, args: { id: string, dto: ChangeUserInput }, context: PrismaClient) => {
-    return context.user.update({
+  resolve: async (_root, args: { id: string, dto: ChangeUserInput }, context: { prisma: PrismaClient }) => {
+    return context.prisma.user.update({
       where: { id: args.id }, 
       data: { ...args.dto }
     });

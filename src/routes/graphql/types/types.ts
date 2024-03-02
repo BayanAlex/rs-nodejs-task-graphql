@@ -1,6 +1,9 @@
-import { GraphQLBoolean, GraphQLEnumType, GraphQLFloat, GraphQLInputObjectType, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLScalarType, GraphQLString } from "graphql";
+import { GraphQLBoolean, GraphQLEnumType, GraphQLFloat, GraphQLInputObjectType, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
 import { MemberTypeId } from "../../member-types/schemas.js";
 import { UUIDType } from "./uuid.js";
+import { IProfile, IUser } from "../models/models.js";
+import { PrismaClient } from "@prisma/client";
+import { Loaders } from "../loaders/loaders.js";
 
 export const MemberTypeIdType = new GraphQLEnumType({ 
   name: 'MemberTypeId', 
@@ -54,7 +57,13 @@ export const ProfileType = new GraphQLObjectType({
     yearOfBirth: { type: GraphQLInt },
     userId: { type: UUIDType },
     memberTypeId: { type: MemberTypeIdType },
-    memberType: { type: MemberType },
+
+    memberType: { 
+      type: MemberType,
+      resolve: (root: IProfile, _args, context: { prisma: PrismaClient, loaders: Loaders }) => {
+        return context.loaders.memberTypes.load(root.memberTypeId);
+      }
+    },
   },
 });
 
@@ -83,10 +92,34 @@ export const UserType = new GraphQLObjectType({
     id: { type: UUIDType },
     name: { type: GraphQLString },
     balance: { type: GraphQLFloat },
-    profile: { type: ProfileType },
-    posts: { type: new GraphQLList(PostType) },
-    userSubscribedTo: { type: new GraphQLList(UserType) },
-    subscribedToUser: { type: new GraphQLList(UserType) },
+
+    profile: { 
+      type: ProfileType,
+      resolve: (root: IUser, _args, context: { prisma: PrismaClient, loaders: Loaders }) => {
+        return context.loaders.profiles.load(root.id);
+      },
+    },
+
+    posts: { 
+      type: new GraphQLList(PostType),
+      resolve: async (root: IUser, _args, context: { prisma: PrismaClient, loaders: Loaders }) => {
+        return context.loaders.posts.load(root.id);
+      },
+    },
+
+    userSubscribedTo: {
+      type: new GraphQLList(UserType),
+      resolve: async (root: IUser, _args, context: { prisma: PrismaClient, loaders: Loaders }) => {
+        return (await context.loaders.userSubscribedTo.load(root.id)) ?? [];
+      },
+    },
+
+    subscribedToUser: {
+      type: new GraphQLList(UserType),
+      resolve: async (root: IUser, _args, context: { prisma: PrismaClient, loaders: Loaders }) => {
+        return (await context.loaders.subscribedToUser.load(root.id)) ?? [];
+      },
+    },
   }),
 });
 
